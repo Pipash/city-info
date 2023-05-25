@@ -44,7 +44,7 @@ public class RestRoute extends RouteBuilder {
                 .convertBodyTo(File.class)
                 .unmarshal(csvDataFormat)
                 .split(body())
-                .unmarshal().bindy(BindyType.Csv, CityHotel.class)
+                //.unmarshal().bindy(BindyType.Csv, CityHotel.class)
                 .aggregate(constant(true), (oldExchange, newExchange) -> {
                     if (oldExchange == null) {
                         // First exchange, create a new ArrayList
@@ -64,5 +64,9 @@ public class RestRoute extends RouteBuilder {
                 .marshal(csvDataFormat)
                 .convertBodyTo(String.class)
                 .to("file:{{output.file.path}}");
+
+        from("direct:cityRoute")
+                .log("check route");
+
     }
 }

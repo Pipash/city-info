@@ -1,9 +1,6 @@
 
 # City Information regarding Hotel and weather
 
-A brief description of what this project does and who it's for
-
-
 ## API Reference
 
 #### Get city hotel info and generate csv with hotel info

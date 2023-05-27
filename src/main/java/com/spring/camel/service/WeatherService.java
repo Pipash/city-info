@@ -22,8 +22,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class WeatherService {
-    //https://api.openweathermap.org/data/2.5/weather?q={city name}&appid={API key}
-
     private final CSVFileGenerator csvFileGenerator;
     @Value("${input.file.path}")
     private String filePath;
@@ -34,6 +32,7 @@ public class WeatherService {
     private String apiKey;
 
     public String getWeatherByCity() throws IOException, InterruptedException {
+        // initializing list for city weather
         List<String[]> cityWeather = new ArrayList<>();
         // setting headers
         cityWeather.add(new String[] {"Country", "City", "Date", "Weather-Details"});
@@ -44,27 +43,29 @@ public class WeatherService {
         //skip header line
         br.readLine();
 
+        // read till the last line
         while ((line = br.readLine()) != null) {
             String[] city = line.split(",");
+            // http request to get api data
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.openweathermap.org/data/2.5/weather?q="+ URLEncoder.encode(city[1], StandardCharsets.UTF_8)+"&appid="+apiKey))
                     .method("GET", HttpRequest.BodyPublishers.noBody())
                     .build();
             HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
-            //System.out.println(response.body());
+            //making jsong object from response body
             JSONObject json = new JSONObject(response.body());
-            //JSONObject json = new JSONObject("{\"cod\":\"404\",\"message\":\"city not found\"}");
-            //JSONObject json = new JSONObject("{\"coord\":{\"lon\":10.7461,\"lat\":59.9127},\"weather\":[{\"id\":803,\"main\":\"Clouds\",\"description\":\"broken clouds\",\"icon\":\"04d\"}],\"base\":\"stations\",\"main\":{\"temp\":290.52,\"feels_like\":289.25,\"temp_min\":289.33,\"temp_max\":292.77,\"pressure\":1021,\"humidity\":36,\"sea_level\":1021,\"grnd_level\":1017},\"visibility\":10000,\"wind\":{\"speed\":4.38,\"deg\":195,\"gust\":5.45},\"clouds\":{\"all\":52},\"dt\":1685182237,\"sys\":{\"type\":2,\"id\":237284,\"country\":\"NO\",\"sunrise\":1685153759,\"sunset\":1685218356},\"timezone\":7200,\"id\":3143244,\"name\":\"Oslo\",\"cod\":200}");
-            //System.out.println(json.get("cod").equals("200"));
+            // check whether json contains valid data
             if (json.get("cod").equals(200)) {
+                // getting information of weather
                 JSONArray jsonArray = new JSONArray(json.get("weather").toString());
                 JSONObject weather = new JSONObject(jsonArray.get(0).toString());
-                //System.out.println(weather.get("description"));
+                // setting city weather list by csv file data and weather api data
                 cityWeather.add(new String[] {city[0], city[1], city[2], weather.get("description").toString()});
             }
 
         }
+        // generate csv file with the prepared data
         Boolean csvFile = csvFileGenerator.generateCSV(cityWeather, outputFilePath + "city-weather.csv");
         if (csvFile) {
             return "File has been generated successfully!";

@@ -39,7 +39,15 @@ public class HotelService {
     @Value("${RapidAPI-Host}")
     private String rapidHost;
 
+    /**
+     * Get all hotels by city name and generate csv
+     *
+     * @return String
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public String getAllHotels() throws IOException, InterruptedException {
+        // make a list for city hotels
         List<String[]> cityHotels = new ArrayList<>();
         // setting headers
         cityHotels.add(new String[] {"Country", "City", "Date", "Hotel"});
@@ -54,8 +62,10 @@ public class HotelService {
         //skip header line
         br.readLine();
 
+        // reading file until last line
         while ((line = br.readLine()) != null) {
             String[] city = line.split(",");
+            // http request to get api data
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://hotels4.p.rapidapi.com/locations/v3/search?q="+ URLEncoder.encode(city[1], StandardCharsets.UTF_8)))
                     .header("X-RapidAPI-Key", rapidKey)
@@ -64,22 +74,28 @@ public class HotelService {
                     .build();
             HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
+            //making jsong object from response body
             JSONObject json = new JSONObject(response.body().replace("@type", "type1"));
 
-            // check whether json return ok or not
+            // check whether json contains valid data
             if (json.get("rc").equals("OK")) {
+                // making json array from json list object
                 JSONArray jsonArray = new JSONArray(json.get("sr").toString());
                 int count =0;
+                // looping through json array
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject jsonObj = new JSONObject(jsonArray.get(i).toString());
+                    // if type of the data is hotel then count and get three hotels of the city
                     if (jsonObj.get("type").equals("HOTEL") && count < 3) {
                         JSONObject regionNames = new JSONObject(jsonObj.get("regionNames").toString());
+                        // adding data to city hotel list with hotel short name from json data
                         cityHotels.add(new String[] {city[0], city[1], city[2], regionNames.get("shortName").toString()});
                         count++;
                     }
                 }
             }
         }
+        // generate csv file with the prepared data
         Boolean csvFile = csvFileGenerator.generateCSV(cityHotels, outputFilePath + "city-hotels.csv");
         if (csvFile) {
             return "File generated successfully!";

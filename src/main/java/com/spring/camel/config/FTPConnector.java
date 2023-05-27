@@ -11,8 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import java.io.IOException;
 import java.net.UnknownHostException;
 
-//@Configuration
-
+@Configuration
 public class FTPConnector {
     Logger logger = LoggerFactory.getLogger(FTPConnector.class);
 

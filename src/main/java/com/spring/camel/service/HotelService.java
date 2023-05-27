@@ -65,14 +65,18 @@ public class HotelService {
             HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
             JSONObject json = new JSONObject(response.body().replace("@type", "type1"));
-            JSONArray jsonArray = new JSONArray(json.get("sr").toString());
-            int count =0;
-            for (int i = 0; i < jsonArray.length(); i++) {
-                JSONObject jsonObj = new JSONObject(jsonArray.get(i).toString());
-                if (jsonObj.get("type").equals("HOTEL") && count < 3) {
-                    JSONObject regionNames = new JSONObject(jsonObj.get("regionNames").toString());
-                    cityHotels.add(new String[] {city[0], city[1], city[2], regionNames.get("shortName").toString()});
-                    count++;
+
+            // check whether json return ok or not
+            if (json.get("rc").equals("OK")) {
+                JSONArray jsonArray = new JSONArray(json.get("sr").toString());
+                int count =0;
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject jsonObj = new JSONObject(jsonArray.get(i).toString());
+                    if (jsonObj.get("type").equals("HOTEL") && count < 3) {
+                        JSONObject regionNames = new JSONObject(jsonObj.get("regionNames").toString());
+                        cityHotels.add(new String[] {city[0], city[1], city[2], regionNames.get("shortName").toString()});
+                        count++;
+                    }
                 }
             }
         }

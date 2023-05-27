@@ -12,7 +12,7 @@ A brief description of what this project does and who it's for
   GET /city-hotels
 ```
 
-#### Get wheather info and generate csv with weather info
+#### Get weather info and generate csv with weather info
 
 ```http
   GET /city-weather

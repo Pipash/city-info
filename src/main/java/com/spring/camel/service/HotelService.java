@@ -1,6 +1,7 @@
 package com.spring.camel.service;
 
 import com.spring.camel.generator.CSVFileGenerator;
+import com.spring.camel.generator.FetchCSVFiles;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HotelService {
     private final CSVFileGenerator csvFileGenerator;
+    private final FetchCSVFiles fetchCSVFiles;
     @Value("${input.file.path}")
     private String filePath;
     @Value("${output.file.path}")
@@ -41,6 +43,10 @@ public class HotelService {
         List<String[]> cityHotels = new ArrayList<>();
         // setting headers
         cityHotels.add(new String[] {"Country", "City", "Date", "Hotel"});
+
+        //download files from ftp to local directory
+        //fetchCSVFiles.downloadFiles();
+
         // reading csv files
         BufferedReader br = new BufferedReader(new FileReader(filePath));
         String line;
@@ -48,10 +54,10 @@ public class HotelService {
         //skip header line
         br.readLine();
 
-        while ((line = br.readLine()) != null /*&& count <1*/) {
-            String[] cities = line.split(",");
+        while ((line = br.readLine()) != null) {
+            String[] city = line.split(",");
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://hotels4.p.rapidapi.com/locations/v3/search?q="+ URLEncoder.encode(cities[1], StandardCharsets.UTF_8)))
+                    .uri(URI.create("https://hotels4.p.rapidapi.com/locations/v3/search?q="+ URLEncoder.encode(city[1], StandardCharsets.UTF_8)))
                     .header("X-RapidAPI-Key", rapidKey)
                     .header("X-RapidAPI-Host", rapidHost)
                     .method("GET", HttpRequest.BodyPublishers.noBody())
@@ -65,7 +71,7 @@ public class HotelService {
                 JSONObject jsonObj = new JSONObject(jsonArray.get(i).toString());
                 if (jsonObj.get("type").equals("HOTEL") && count < 3) {
                     JSONObject regionNames = new JSONObject(jsonObj.get("regionNames").toString());
-                    cityHotels.add(new String[] {cities[0], cities[1], cities[2], regionNames.get("shortName").toString()});
+                    cityHotels.add(new String[] {city[0], city[1], city[2], regionNames.get("shortName").toString()});
                     count++;
                 }
             }

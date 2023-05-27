@@ -1,19 +1,80 @@
 package com.spring.camel.service;
 
-import com.spring.camel.DTO.CityHotel;
+import com.spring.camel.generator.CSVFileGenerator;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class HotelService {
+    private final CSVFileGenerator csvFileGenerator;
+    @Value("${input.file.path}")
+    private String filePath;
+    @Value("${output.file.path}")
+    private String outputFilePath;
 
-    public void getAllHotels(List<CityHotel> cityHotels) {
-        log.info("get-hotels-called");
-        cityHotels.forEach(cityHotel -> {
-            cityHotel.setHotel("new hotel");
-        });
+    @Value("${RapidAPI-Key}")
+    private String rapidKey;
+
+    @Value("${RapidAPI-Host}")
+    private String rapidHost;
+
+    public String getAllHotels() throws IOException, InterruptedException {
+        List<String[]> cityHotels = new ArrayList<>();
+        // setting headers
+        cityHotels.add(new String[] {"Country", "City", "Date", "Hotel"});
+        // reading csv files
+        BufferedReader br = new BufferedReader(new FileReader(filePath));
+        String line;
+
+        //skip header line
+        br.readLine();
+
+        while ((line = br.readLine()) != null /*&& count <1*/) {
+            String[] cities = line.split(",");
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://hotels4.p.rapidapi.com/locations/v3/search?q="+ URLEncoder.encode(cities[1], StandardCharsets.UTF_8)))
+                    .header("X-RapidAPI-Key", rapidKey)
+                    .header("X-RapidAPI-Host", rapidHost)
+                    .method("GET", HttpRequest.BodyPublishers.noBody())
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+            JSONObject json = new JSONObject(response.body().replace("@type", "type1"));
+            JSONArray jsonArray = new JSONArray(json.get("sr").toString());
+            int count =0;
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject jsonObj = new JSONObject(jsonArray.get(i).toString());
+                if (jsonObj.get("type").equals("HOTEL") && count < 3) {
+                    JSONObject regionNames = new JSONObject(jsonObj.get("regionNames").toString());
+                    cityHotels.add(new String[] {cities[0], cities[1], cities[2], regionNames.get("shortName").toString()});
+                    count++;
+                }
+            }
+        }
+        Boolean csvFile = csvFileGenerator.generateCSV(cityHotels, outputFilePath + "city-hotels.csv");
+        if (csvFile) {
+            return "File generated successfully!";
+        }
+
+        return "No File Generated";
     }
 }

@@ -32,7 +32,7 @@ public class RestRoute extends RouteBuilder {
     @Override
     public void configure() throws Exception {
         // Configure the CSV data format
-        CsvDataFormat csvDataFormat = new CsvDataFormat();
+        /*CsvDataFormat csvDataFormat = new CsvDataFormat();
         csvDataFormat.setDelimiter(","); // Set the delimiter used in the CSV file
         // REST endpoint to get all hotels info
         rest("/get-hotels")
@@ -63,7 +63,7 @@ public class RestRoute extends RouteBuilder {
                 .bean(hotelService, "getAllHotels")
                 .marshal(csvDataFormat)
                 .convertBodyTo(String.class)
-                .to("file:{{output.file.path}}");
+                .to("file:{{output.file.path}}");*/
 
         from("direct:cityRoute")
                 .log("check route");
